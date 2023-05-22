@@ -1,0 +1,17 @@
+[package]
+name = "bardiel"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.71"
+log = "0.4.17"
+tokio = { version = "1.28.1", features = [
+    "net",
+    "io-std",
+    "io-util",
+    "macros",
+    "rt-multi-thread",
+], default-features = false }
