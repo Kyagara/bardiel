@@ -2,6 +2,12 @@
 name = "bardiel"
 version = "0.1.0"
 edition = "2021"
+categories = ["command-line-utilities", "network-programming"]
+description = "Minecraft server proxy."
+keywords = ["proxy", "minecraft", "cli"]
+repository = "https://github.com/Kyagara/bardiel"
+homepage = "https://github.com/Kyagara/bardiel"
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
