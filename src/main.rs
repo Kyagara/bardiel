@@ -81,18 +81,12 @@ async fn handle_connection(mut client_conn: TcpStream, client_addr: String) -> R
                     }
                 }
             });
-            let addr_clone2 = client_addr.clone();
-            let a = tokio::spawn(async move {
-                if let Err(err) = io::copy(&mut player_read, &mut server_write).await {
-                    if err.kind() != ErrorKind::BrokenPipe {
-                        error!(
-                            "[{addr_clone2}] Error copying contents from player to server: {err}"
-                        )
-                    }
-                }
-            });
 
-            a.await?;
+            if let Err(err) = io::copy(&mut player_read, &mut server_write).await {
+                if err.kind() != ErrorKind::BrokenPipe {
+                    error!("[{client_addr}] Error copying contents from player to server: {err}")
+                }
+            }
 
             if !username.is_empty() {
                 info!("[{client_addr}] User {username:?} disconnecting.");
