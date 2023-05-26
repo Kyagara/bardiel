@@ -80,7 +80,7 @@ async fn main() -> Result<()> {
                     if let Err(err) =
                         proxy::handle_connection(stream, ip, proxy_config, server_status).await
                     {
-                        error!("Error occurred with client \"{client_addr}\": {err:?}.");
+                        error!("Error occurred with client \"{client_addr}\": {err:?}");
                     }
 
                     info!("[{ip}] Disconnected.");

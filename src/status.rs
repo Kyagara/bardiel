@@ -1,5 +1,5 @@
 use crate::protocol;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::{io::Cursor, sync::Arc};
 use tokio::{
@@ -46,6 +46,10 @@ impl ServerStatusResponse {
         let mut buffer = vec![0u8; length as usize];
         stream.read_exact(&mut buffer).await?;
 
+        if buffer[0] != 0x00 {
+            return Err(anyhow!("Invalid packet ID."));
+        }
+
         // Status response
         let lock = status.lock().await;
 
@@ -70,6 +74,10 @@ impl ServerStatusResponse {
         let length = protocol::read_varint(&mut stream).await?;
         let mut buffer = vec![0u8; length as usize];
         stream.read_exact(&mut buffer).await?;
+
+        if buffer[0] != 0x01 {
+            return Err(anyhow!("Invalid packet ID."));
+        }
 
         // Ping response
         protocol::write_varint(&mut stream, buffer.len() as i32).await?;

@@ -14,6 +14,10 @@ pub async fn get_client_username(
     let mut buffer = vec![0u8; length as usize];
     player_conn.read_exact(&mut buffer).await?;
 
+    if buffer[0] != 0x00 {
+        return Err(anyhow!("Invalid packet ID."));
+    }
+
     protocol::write_varint(server_conn, buffer.len() as i32).await?;
     server_conn.write_all(&buffer).await?;
 
