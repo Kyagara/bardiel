@@ -1,7 +1,7 @@
 use crate::protocol;
 use anyhow::{anyhow, Result};
 use std::io::Cursor;
-use tokio::{io::AsyncReadExt, net::TcpStream};
+use tokio::net::TcpStream;
 
 pub struct HandshakePacket {
     pub buffer: Vec<u8>,
@@ -16,11 +16,9 @@ pub enum NextState {
 
 impl HandshakePacket {
     pub async fn decode(stream: &mut TcpStream) -> Result<HandshakePacket> {
-        let length = protocol::read_varint(stream).await?;
-        let mut buffer = vec![0u8; length as usize];
-        stream.read_exact(&mut buffer).await?;
+        let hs = protocol::decode_packet(stream).await?;
 
-        let mut cursor = Cursor::new(buffer);
+        let mut cursor = Cursor::new(hs);
 
         let id = protocol::read_varint(&mut cursor).await?;
 

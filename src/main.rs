@@ -1,16 +1,13 @@
-use crate::{
-    proxy::ProxyConfig,
-    status::{ServerStatusResponse, StatusPlayers, StatusVersion},
-};
+use crate::proxy::{Config, Proxy};
 use anyhow::Result;
 use base64::{engine::general_purpose, Engine as _};
 use log::{error, info, LevelFilter};
 use std::{
     fs::File,
     io::{BufReader, Read},
-    sync::Arc,
+    sync::{atomic::AtomicUsize, Arc},
 };
-use tokio::{net::TcpListener, sync::Mutex};
+use tokio::net::TcpListener;
 
 mod handshake;
 mod logger;
@@ -18,6 +15,8 @@ mod login;
 mod protocol;
 mod proxy;
 mod status;
+
+pub static ONLINE_PLAYERS: AtomicUsize = AtomicUsize::new(0);
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -27,9 +26,9 @@ async fn main() -> Result<()> {
     info!("Loading configuration file.");
     let file = File::open("./config.json")?;
     let reader = BufReader::new(file);
-    let config: ProxyConfig = serde_json::from_reader(reader)?;
+    let mut config: Config = serde_json::from_reader(reader)?;
 
-    let favicon = match config.server_icon.clone() {
+    config.server_icon = match config.server_icon {
         Some(path) => {
             if !path.is_empty() {
                 let mut image = File::open(path)?;
@@ -45,41 +44,24 @@ async fn main() -> Result<()> {
         None => None,
     };
 
-    let status = ServerStatusResponse {
-        description: config.description.clone(),
-        favicon,
-        players: StatusPlayers {
-            max: config.max_players,
-            online: 0,
-            sample: vec![],
-        },
-        version: StatusVersion {
-            name: "bardiel".to_string(),
-            protocol: 762,
-        },
-    };
-
     info!("Creating listener on {:?}.", config.bind);
     let listener = TcpListener::bind(&config.bind).await?;
     info!("Listening on {:?}.", config.bind);
 
-    let status = Arc::new(Mutex::new(status));
+    let proxy = Arc::new(Proxy { config });
 
     loop {
         match listener.accept().await {
             Ok((stream, client_addr)) => {
                 info!("New client: \"{client_addr}\".");
 
-                let server_status = Arc::clone(&status);
-                let proxy_config = config.clone();
+                let proxy = Arc::clone(&proxy);
                 stream.set_nodelay(true)?;
 
                 tokio::spawn(async move {
                     let ip = client_addr.ip();
 
-                    if let Err(err) =
-                        proxy::handle_connection(stream, ip, proxy_config, server_status).await
-                    {
+                    if let Err(err) = Proxy::handle_connection(stream, ip, proxy).await {
                         error!("Error occurred with client \"{client_addr}\": {err:?}");
                     }
 

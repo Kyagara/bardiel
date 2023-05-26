@@ -11,13 +11,11 @@ Since this is mostly a fun project for me, I cannot stress enough that this is *
 
 ## Todo:
 
--   Restructure the project, handlers are all over the place
--   Proper sharing of the server status/proxy struct across the proxy
 -   Handle more packets from the login flow
 
 ## Tested on:
 
--   Fabric server 1.19.4, offline mode, network-compression-threshold -1
+-   Fabric server 1.19.2/4, offline mode, network-compression-threshold -1
 
 ## Current state:
 

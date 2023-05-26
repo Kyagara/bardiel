@@ -1,6 +1,13 @@
 use anyhow::Result;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
+pub async fn decode_packet<T: AsyncRead + AsyncWrite + Unpin>(stream: &mut T) -> Result<Vec<u8>> {
+    let length = read_varint(stream).await?;
+    let mut buffer = vec![0u8; length as usize];
+    stream.read_exact(&mut buffer).await?;
+    Ok(buffer)
+}
+
 pub async fn read_varint<T: AsyncRead + AsyncWrite + Unpin>(stream: &mut T) -> Result<i32> {
     let mut buffer = [0];
     let mut result = 0;
@@ -40,10 +47,7 @@ pub async fn write_varint<T: AsyncWrite + Unpin>(stream: &mut T, mut value: i32)
 }
 
 pub async fn read_string<T: AsyncRead + AsyncWrite + Unpin>(stream: &mut T) -> Result<String> {
-    let length = read_varint(stream).await?;
-    let mut buffer = vec![0u8; length as usize];
-    stream.read_exact(&mut buffer).await?;
-    Ok(String::from_utf8(buffer)?)
+    Ok(String::from_utf8(decode_packet(stream).await?)?)
 }
 
 pub async fn write_string<T: AsyncRead + AsyncWrite + Unpin>(
