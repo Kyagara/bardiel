@@ -15,7 +15,7 @@ pub enum NextState {
 }
 
 impl HandshakePacket {
-    pub async fn new(stream: &mut TcpStream) -> Result<HandshakePacket> {
+    pub async fn decode(stream: &mut TcpStream) -> Result<HandshakePacket> {
         let length = protocol::read_varint(stream).await?;
         let mut buffer = vec![0u8; length as usize];
         stream.read_exact(&mut buffer).await?;
