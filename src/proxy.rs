@@ -59,6 +59,11 @@ pub async fn handle_connection(
                 info!("[{client_addr}] User {username:?} connected.");
             }
 
+            {
+                let mut lock = server_status.lock().await;
+                lock.players.online += 1;
+            }
+
             let (mut server_read, mut server_write) = io::split(server_conn);
             let (mut player_read, mut player_write) = io::split(client_conn);
 
@@ -82,6 +87,12 @@ pub async fn handle_connection(
 
             if !username.is_empty() {
                 info!("[{client_addr}] User {username:?} disconnecting.");
+
+                let mut lock = server_status.lock().await;
+
+                if lock.players.online > 0 {
+                    lock.players.online -= 1;
+                }
             }
 
             Ok(())

@@ -1,7 +1,7 @@
 {
     "bind": "127.0.0.1:25565",
     "server_address": "127.0.0.1:25566",
-    "max_players": 20,
-    "description": "Cool description.",
-    "server_icon": ""
+    "max_players": 2000,
+    "description": "\n\u00a7c\u00a7o                    Cool description!",
+    "server_icon": "./server_icon.png"
 }

@@ -18,10 +18,11 @@ pub async fn read_varint<T: AsyncRead + AsyncWrite + Unpin>(stream: &mut T) -> R
     Ok(result)
 }
 
-pub async fn write_varint<T: AsyncWrite + Unpin>(stream: &mut T, mut value: i32) -> Result<()> {
+pub async fn write_varint<T: AsyncWrite + Unpin>(stream: &mut T, mut value: i32) -> Result<usize> {
     let mut buffer = [0];
+    let mut written = 0;
 
-    while value != 0 {
+    loop {
         buffer[0] = (value & 0x7F) as u8;
 
         value = (value >> 7) & (i32::MAX >> 6);
@@ -30,10 +31,12 @@ pub async fn write_varint<T: AsyncWrite + Unpin>(stream: &mut T, mut value: i32)
             buffer[0] |= 0x80;
         }
 
-        stream.write_all(&buffer).await?;
-    }
+        written += stream.write(&buffer).await?;
 
-    Ok(())
+        if value == 0 {
+            break Ok(written);
+        }
+    }
 }
 
 pub async fn read_string<T: AsyncRead + AsyncWrite + Unpin>(stream: &mut T) -> Result<String> {
@@ -41,4 +44,13 @@ pub async fn read_string<T: AsyncRead + AsyncWrite + Unpin>(stream: &mut T) -> R
     let mut buffer = vec![0u8; length as usize];
     stream.read_exact(&mut buffer).await?;
     Ok(String::from_utf8(buffer)?)
+}
+
+pub async fn write_string<T: AsyncRead + AsyncWrite + Unpin>(
+    stream: &mut T,
+    value: String,
+) -> Result<()> {
+    write_varint(stream, value.len() as i32).await?;
+    stream.write_all(value.as_bytes()).await?;
+    Ok(())
 }

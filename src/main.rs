@@ -30,16 +30,14 @@ async fn main() -> Result<()> {
 
     let favicon = match config.server_icon.clone() {
         Some(path) => {
-            if path.is_empty() {
-                None
-            } else {
+            if !path.is_empty() {
                 let mut image = File::open(path)?;
                 let mut buffer = Vec::new();
                 image.read_to_end(&mut buffer)?;
                 let encoded: String = general_purpose::STANDARD_NO_PAD.encode(buffer);
-                let _base64 = format!("data:image/png;base64,{}", encoded);
-                // Big json strings are currently broken, return None for now
-                // StatusFavicon { icon: base64 }
+                let base64 = format!("data:image/png;base64,{}", encoded);
+                Some(base64)
+            } else {
                 None
             }
         }
@@ -70,9 +68,10 @@ async fn main() -> Result<()> {
         match listener.accept().await {
             Ok((stream, client_addr)) => {
                 info!("New client: \"{client_addr}\".");
-                stream.set_nodelay(true)?;
+
                 let server_status = Arc::clone(&status);
                 let proxy_config = config.clone();
+                stream.set_nodelay(true)?;
 
                 tokio::spawn(async move {
                     let ip = client_addr.ip();
