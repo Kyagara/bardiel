@@ -1,10 +1,7 @@
 use anyhow::Result;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
-pub async fn read_varint<T>(stream: &mut T) -> Result<i32>
-where
-    T: AsyncRead + std::marker::Unpin,
-{
+pub async fn read_varint<T: AsyncRead + AsyncWrite + Unpin>(stream: &mut T) -> Result<i32> {
     let mut buffer = [0];
     let mut result = 0;
 
@@ -21,10 +18,7 @@ where
     Ok(result)
 }
 
-pub async fn write_varint<T>(stream: &mut T, mut value: i32) -> Result<()>
-where
-    T: AsyncWrite + std::marker::Unpin,
-{
+pub async fn write_varint<T: AsyncWrite + Unpin>(stream: &mut T, mut value: i32) -> Result<()> {
     let mut buffer = [0];
 
     while value != 0 {
@@ -42,14 +36,9 @@ where
     Ok(())
 }
 
-pub async fn read_string<T>(stream: &mut T) -> Result<String>
-where
-    T: AsyncRead + std::marker::Unpin,
-{
+pub async fn read_string<T: AsyncRead + AsyncWrite + Unpin>(stream: &mut T) -> Result<String> {
     let length = read_varint(stream).await?;
     let mut buffer = vec![0u8; length as usize];
-
     stream.read_exact(&mut buffer).await?;
-
-    Ok(String::from_utf8_lossy(&buffer).to_string())
+    Ok(String::from_utf8(buffer)?)
 }

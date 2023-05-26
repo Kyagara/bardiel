@@ -3,12 +3,8 @@ use anyhow::{anyhow, Result};
 use std::io::Cursor;
 use tokio::{io::AsyncReadExt, net::TcpStream};
 
-#[allow(unused)]
 pub struct HandshakePacket {
     pub buffer: Vec<u8>,
-    protocol_version: i32,
-    server_address: String,
-    server_port: u16,
     pub next_state: NextState,
 }
 
@@ -32,9 +28,8 @@ impl HandshakePacket {
             return Err(anyhow!("Invalid packet ID."));
         }
 
-        let protocol_version = protocol::read_varint(&mut cursor).await?;
-        let server_address = protocol::read_string(&mut cursor).await?;
-        let server_port = cursor.read_u16().await?;
+        // Skipping some fields that we don't use for now.
+        cursor.set_position(cursor.position() + 14);
 
         let next_state = if protocol::read_varint(&mut cursor).await? == 1 {
             NextState::Status
@@ -44,9 +39,6 @@ impl HandshakePacket {
 
         Ok(HandshakePacket {
             buffer: cursor.into_inner(),
-            protocol_version,
-            server_address,
-            server_port,
             next_state,
         })
     }
