@@ -52,17 +52,18 @@ async fn main() -> Result<()> {
 
     loop {
         match listener.accept().await {
-            Ok((stream, client_addr)) => {
-                info!("New client: \"{client_addr}\".");
+            Ok((stream, address)) => {
+                info!("New client: \"{address}\".");
 
-                let proxy = Arc::clone(&proxy);
                 stream.set_nodelay(true)?;
 
+                let proxy = Arc::clone(&proxy);
+
                 tokio::spawn(async move {
-                    let ip = client_addr.ip();
+                    let ip = address.ip();
 
                     if let Err(err) = Proxy::handle_connection(stream, ip, proxy).await {
-                        error!("Error occurred with client \"{client_addr}\": {err:?}");
+                        error!("Error occurred with client \"{ip}\": {err:?}");
                     }
 
                     info!("[{ip}] Disconnected.");

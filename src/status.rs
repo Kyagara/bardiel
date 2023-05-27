@@ -6,18 +6,22 @@ use std::{
     io::Cursor,
     sync::{atomic::Ordering, Arc},
 };
-use tokio::{io::AsyncWriteExt, net::TcpStream};
+use tokio::{
+    io::AsyncWriteExt,
+    net::tcp::{OwnedReadHalf, OwnedWriteHalf},
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct StatusResponse;
 
 impl StatusResponse {
     pub async fn handle_server_status_request(
-        mut stream: &mut TcpStream,
+        mut client_read: &mut OwnedReadHalf,
+        mut client_write: &mut OwnedWriteHalf,
         proxy: Arc<Proxy>,
     ) -> Result<()> {
         // Status request
-        let request = protocol::decode_packet(stream).await?;
+        let request = protocol::decode_packet(&mut client_read).await?;
 
         if request[0] != 0x00 {
             return Err(anyhow!("Invalid packet ID."));
@@ -51,20 +55,20 @@ impl StatusResponse {
         let length =
             1 + json.len() + protocol::write_varint(&mut cursor, json.len() as i32).await?;
 
-        protocol::write_varint(&mut stream, length as i32).await?;
-        protocol::write_varint(&mut stream, 0x00).await?;
-        protocol::write_string(&mut stream, json).await?;
+        protocol::write_varint(client_write, length as i32).await?;
+        protocol::write_varint(&mut client_write, 0x00).await?;
+        protocol::write_string(&mut client_write, json).await?;
 
         // Ping request
-        let ping = protocol::decode_packet(stream).await?;
+        let ping = protocol::decode_packet(&mut client_read).await?;
 
         if ping[0] != 0x01 {
             return Err(anyhow!("Invalid packet ID."));
         }
 
         // Ping response
-        protocol::write_varint(&mut stream, ping.len() as i32).await?;
-        stream.write_all(&ping).await?;
+        protocol::write_varint(&mut client_write, ping.len() as i32).await?;
+        client_write.write_all(&ping).await?;
 
         Ok(())
     }
