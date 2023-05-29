@@ -1,4 +1,4 @@
-use crate::{protocol, proxy::Proxy, ONLINE_PLAYERS};
+use crate::{protocol, proxy::Config, ONLINE_PLAYERS};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -18,7 +18,7 @@ impl StatusResponse {
     pub async fn handle_server_status_request(
         mut client_read: &mut OwnedReadHalf,
         mut client_write: &mut OwnedWriteHalf,
-        proxy: Arc<Proxy>,
+        proxy_config: Arc<Config>,
     ) -> Result<()> {
         // Status request
         let request = protocol::decode_packet(&mut client_read).await?;
@@ -34,13 +34,13 @@ impl StatusResponse {
                 "name": "bardiel",
                 "protocol": 762
               },
-              "description": proxy.config.description,
+              "description": proxy_config.description,
               "players": {
-                "max": proxy.config.max_players,
+                "max": proxy_config.max_players,
                 "online": ONLINE_PLAYERS.load(Ordering::Relaxed),
                 "sample": []
               },
-              "favicon":  proxy.config.server_icon
+              "favicon":  proxy_config.server_icon
         });
 
         let json = serde_json::to_string(&json)?;
